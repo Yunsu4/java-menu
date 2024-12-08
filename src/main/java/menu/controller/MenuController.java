@@ -3,6 +3,7 @@ package menu.controller;
 import camp.nextstep.edu.missionutils.Randoms;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -17,15 +18,13 @@ import menu.view.error.ErrorException;
 import menu.view.error.InputErrorType;
 
 public class MenuController {
-/*
+
     private List<String> JAPANESE_FOOD = List.of("규동, 우동, 미소시루, 스시, 가츠동, 오니기리, 하이라이스, 라멘, 오코노미야끼");
     private List<String> KOREAN_FOOD = List.of("김밥, 김치찌개, 쌈밥, 된장찌개, 비빔밥, 칼국수, 불고기, 떡볶이, 제육볶음");
     private List<String> CHINESE_FOOD = List.of("깐풍기, 볶음면, 동파육, 짜장면, 짬뽕, 마파두부, 탕수육, 토마토 달걀볶음, 고추잡채");
     private List<String> ASIAN_FOOD = List.of("팟타이, 카오 팟, 나시고렝, 파인애플 볶음밥, 쌀국수, 똠얌꿍, 반미, 월남쌈, 분짜");
     private List<String> WESTERN_FOOD = List.of("라자냐, 그라탱, 뇨끼, 끼슈, 프렌치 토스트, 바게트, 스파게티, 피자, 파니니");
 
-
- */
     private InputView inputView;
     private OutputView outputView;
 
@@ -39,46 +38,48 @@ public class MenuController {
     public void run(){
         outputView.displayStartMessage();
         List<String> coaches = getValidCoaches(inputView::enteredCoaches);
-        Map<String, List<String>> personalOptions = new HashMap<>();
+        Map<String, List<String>> personalOptions = new LinkedHashMap<>();
         for(String coach: coaches){
             List<String> menuToExclude = getValidMenuToExclude(coach);
             personalOptions.put(coach, menuToExclude);
         }
 
-        List<String> menuOfTheCoach = new LinkedList<>();
         List<String> categories = new LinkedList<>();
-        List<String> menuOfAllCoaches = new LinkedList<>();
 
         for(int day =1; day<=5; day++){
             getValidCategory(categories);
         }
 
+        Map<String, List<String>> personalMenus = new LinkedHashMap<>();
 
-        for(Entry<String, List<String>> personalOption : personalOptions.entrySet()){
-            for(int day =1; day<=5; day++){
-                String menu = getValidMenu(categories.get(day-1), personalOption, menuOfTheCoach);
-                menuOfAllCoaches.add(menu);
+        for(int day =1; day<=5; day++){
+            for(Entry<String, List<String>> personalOption : personalOptions.entrySet()){
+                List<String> exitMenus = personalMenus.get(personalOption.getKey());
+                if(exitMenus == null){
+                    exitMenus = new LinkedList<>();
+                }
+                getValidMenu(categories.get(day - 1), personalOption, exitMenus);
+                personalMenus.put(personalOption.getKey(), exitMenus);
             }
-            menuOfTheCoach = new LinkedList<>();
+
         }
 
         outputView.displayMessage();
         String categoriesForDisplay = String.join(" | ", categories);
         outputView.displayCategories(categoriesForDisplay);
-        displayResult(personalOptions, menuOfAllCoaches);
+        displayResult(personalOptions, personalMenus);
         outputView.displayEndMessage();
     }
 
-    private void displayResult(Map<String, List<String>> personalOptions, List<String> menuOfAllCoaches) {
+    private void displayResult(Map<String, List<String>> personalOptions, Map<String, List<String>> personalMenus) {
         for(Entry<String, List<String>> personalOption : personalOptions.entrySet()){
             String coachName = personalOption.getKey();
             outputView.displayCoachName(coachName);
 
-            for(int index = 0; index< menuOfAllCoaches.size(); index+=5){
-                List<String> menusOfTheCoach = menuOfAllCoaches.subList(index, index+5);
-                String menus = String.join(" | ", menusOfTheCoach);
-                outputView.displayMenus(menus);
-            }
+            List<String> exitMenus = personalMenus.get(personalOption.getKey());
+            String menus = String.join(" | ", exitMenus);
+            outputView.displayMenus(menus);
+
         }
     }
 
@@ -107,14 +108,14 @@ public class MenuController {
         }
     }
 
-    private String getValidMenu(String category, Entry<String, List<String>> personalOption, List<String> menuOfTheCoach) {
+    private List<String> getValidMenu(String category, Entry<String, List<String>> personalOption, List<String> existMenus) {
         while (true) {
             String menu = getMenuByCategory(category);
             boolean isMenuToExclude = personalOption.getValue().stream()
                     .anyMatch(value -> value.equals(menu));
             boolean isDuplicated = false;
-            if(menuOfTheCoach != null){
-                isDuplicated = menuOfTheCoach.stream()
+            if(existMenus != null){
+                isDuplicated = existMenus.stream()
                         .anyMatch(value -> value.equals(menu));
             }
 
@@ -122,8 +123,8 @@ public class MenuController {
                 if(isMenuToExclude || isDuplicated){
                     throw new IllegalArgumentException("retry");
                 }
-                menuOfTheCoach.add(menu);
-                return menu;
+                existMenus.add(menu);
+                return existMenus;
 
             } catch (IllegalArgumentException e) {
                 if(!e.getMessage().equals("retry")){
@@ -157,13 +158,6 @@ public class MenuController {
     }
 
     private String getMenuByCategory(String input) throws ErrorException {
-
-        List<String> JAPANESE_FOOD = List.of("규동, 우동, 미소시루, 스시, 가츠동, 오니기리, 하이라이스, 라멘, 오코노미야끼");
-        List<String> KOREAN_FOOD = List.of("김밥, 김치찌개, 쌈밥, 된장찌개, 비빔밥, 칼국수, 불고기, 떡볶이, 제육볶음");
-        List<String> CHINESE_FOOD = List.of("깐풍기, 볶음면, 동파육, 짜장면, 짬뽕, 마파두부, 탕수육, 토마토 달걀볶음, 고추잡채");
-        List<String> ASIAN_FOOD = List.of("팟타이, 카오 팟, 나시고렝, 파인애플 볶음밥, 쌀국수, 똠얌꿍, 반미, 월남쌈, 분짜");
-        List<String> WESTERN_FOOD = List.of("라자냐, 그라탱, 뇨끼, 끼슈, 프렌치 토스트, 바게트, 스파게티, 피자, 파니니");
-
         if(input.equals("일식")){
             return Randoms.shuffle(JAPANESE_FOOD).get(0);
         }
