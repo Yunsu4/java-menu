@@ -1,7 +1,6 @@
 package menu.model;
 
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
+
 import java.util.LinkedList;
 import java.util.List;
 import menu.view.error.ErrorException;
@@ -11,22 +10,25 @@ public class Coaches {
 
     private final String COMMA = "\\s*,\\s*";
 
-    private final List<String> names;
+    private final List<Coach> coaches;
 
     public Coaches(String input) throws ErrorException {
         String[] splitInput = extractValidInput(input);
-        this.names = getValidCoaches(splitInput);
+        this.coaches = getValidCoaches(splitInput);
     }
 
-    public List<String> getNames(){
-        return names;
+    public List<Coach> getCoaches(){
+        return coaches;
     }
 
-    private List<String> getValidCoaches(String[] splitInput) throws ErrorException {
-        for (String input : splitInput) {
-            checkNameLength(input);
+
+    private List<Coach> getValidCoaches(String[] splitInput) throws ErrorException {
+        List<Coach> coaches = new LinkedList<>();
+        for (String coachesName: splitInput) {
+            checkNameLength(coachesName);
+            coaches.add(new Coach(coachesName));
         }
-        return new LinkedList<>(List.of(splitInput));
+        return coaches;
     }
 
     private void checkNameLength(String input) throws ErrorException {
@@ -57,6 +59,15 @@ public class Coaches {
     private void checkIsEmpty(String input) throws ErrorException {
         if (input.isEmpty()) {
             throw new ErrorException(InputErrorType.NEED_AVAILABLE_INPUT);
+        }
+    }
+
+
+    public void recommendMenus(List<String> categories){
+        for (int day = 0; day < 5; day++) {
+            for (Coach coach: coaches) {
+                coach.recommendMenu(categories.get(day));
+            }
         }
     }
 }
